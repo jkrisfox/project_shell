@@ -25,8 +25,8 @@ router.route('/')
       subject,
       done,
       dueDate,
-    }).then((user) => {
-      res.json(user);
+    }).then((todo) => {
+      res.json(todo);
     });
   });
 
