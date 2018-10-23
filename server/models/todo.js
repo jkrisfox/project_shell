@@ -4,8 +4,9 @@ module.exports = (sequelize, DataTypes) => {
     done: DataTypes.BOOLEAN,
     dueDate: DataTypes.DATE,
   }, {});
-  ToDo.associate = function (models) {
+  ToDo.associate = (models) => {
     // associations can be defined here
+    ToDo.belongsTo(models.User);
   };
   return ToDo;
 };

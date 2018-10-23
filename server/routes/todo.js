@@ -1,64 +1,75 @@
 const express = require('express');
+const authenticated = require('./authenticated');
 const { ToDo } = require('../models');
 
 const router = express.Router();
 
-router.route('/')
+router
+  .route('/')
+  .all(authenticated)
   // get all todos
   .get((req, res) => {
-    ToDo.findAll().then((todos) => {
+    req.authenticatedUser.getToDos().then(todos => {
       res.json({
-        todos,
+        todos
       });
     });
   })
 
   // create  todo
   .post((req, res) => {
-    const {
-      subject,
-      dueDate,
-      done,
-    } = req.body;
-    // validate potentially here
-    ToDo.create({
+    const { subject, dueDate, done } = req.body;
+    const newTodo = ToDo.build({
       subject,
       done,
-      dueDate,
-    }).then((todo) => {
-      res.json(todo);
+      dueDate
+    });
+    newTodo.setUser(req.authenticatedUser);
+    newTodo.save().then(() => {
+      res.json(newTodo);
     });
   });
 
-router.route('/:id')
+router
+  .route('/:id')
+  .all(authenticated)
+  .all((req, res, next) => {
+    ToDo.findOne({
+      where: {
+        id: req.params.id,
+        userId: req.authenticatedUser.id
+      }
+    }).then(todo => {
+      if (todo) {
+        req.todo = todo;
+        next();
+      } else {
+        res.status(404);
+      }
+    });
+  })
 
   // get a specific todo
   .get((req, res) => {
-    ToDo.findById(req.params.id).then((todo) => {
-      res.json(todo);
-    });
+    res.json(req.todo);
   })
 
   // update a given todo
   .put((req, res) => {
     const { subject, dueDate, done } = req.body;
-    ToDo.findById(req.params.id).then((todo) => {
-      const todoToUpdate = todo;
-      todoToUpdate.subject = subject;
-      todoToUpdate.dueDate = dueDate;
-      todoToUpdate.done = done;
-      todoToUpdate.save().then((updatedTodo) => {
-        res.json(updatedTodo);
-      });
+    const todoToUpdate = req.todo;
+    todoToUpdate.subject = subject;
+    todoToUpdate.dueDate = dueDate;
+    todoToUpdate.done = done;
+    todoToUpdate.save().then(updatedTodo => {
+      res.json(updatedTodo);
     });
   })
 
   .delete((req, res) => {
-    const idToDelete = req.params.id;
-    ToDo.findById(idToDelete).then((todo) => {
-      todo.destroy().then(() => {
-        res.json({ delete: true });
-      });
+    const { todo } = req;
+    todo.destroy().then(() => {
+      res.json({ delete: true });
     });
   });
 

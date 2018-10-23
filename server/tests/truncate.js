@@ -1,13 +1,12 @@
-const models = require('../models');
+const { User, Session, ToDo } = require('../models');
+
+const models = [ToDo, Session, User];
 
 module.exports = function truncate() {
   return Promise.all(
-    Object.keys(models).map((key) => {
-      if (['sequelize', 'Sequelize'].includes(key)) return null;
-      return models[key].destroy({
-        where: {},
-        force: true,
-      });
-    }),
+    models.map(model => model.destroy({
+      where: {},
+      force: true,
+    })),
   );
 };
