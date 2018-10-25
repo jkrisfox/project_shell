@@ -4,9 +4,11 @@ const models = [ToDo, Session, User];
 
 module.exports = function truncate() {
   return Promise.all(
-    models.map(model => model.destroy({
-      where: {},
-      force: true,
-    })),
+    models.map(model =>
+      model.destroy({
+        where: {},
+        force: true
+      })
+    )
   );
 };

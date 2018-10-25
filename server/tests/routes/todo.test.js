@@ -1,7 +1,7 @@
 const request = require('supertest');
 const app = require('../../app');
+const { ToDo, User, Session } = require('../../models');
 const truncate = require('../truncate');
-const { ToDo, User } = require('../../models');
 
 const rootPath = '/todos';
 
@@ -11,43 +11,55 @@ describe('/todos', () => {
       username: `test${new Date().getTime()}`,
       password: 'test'
     });
-
-  afterAll(() => truncate().then(() => ToDo.sequelize.close()));
-
+  const login = user => {
+    const session = Session.build({
+      expiration: new Date(new Date().getTime() + 30 * 6000)
+    });
+    return session.setUser(user).then(sess => sess.save().then(() => user));
+  };
+  beforeAll(() => truncate());
+  afterAll(() => ToDo.Sequelize.close());
   describe('GET /', () => {
     it('should return an empty array', () =>
-      createUser().then(loggedInUser =>
-        request(app)
-          .get(rootPath)
-          .set('user-id', loggedInUser.id)
-          .expect(response => expect(response.body.todos).toEqual([]))
-      ));
-    it('should return 1 item in the array', () =>
-      ToDo.create({
-        subject: 'test'
-      }).then(todo =>
-        createUser().then(loggedInUser =>
-          loggedInUser.addToDo(todo).then(() =>
-            request(app)
-              .get(rootPath)
-              .set('user-id', loggedInUser.id)
-              .expect(response => expect(response.body.todos.length).toEqual(1))
-          )
+      createUser().then(user =>
+        login(user).then(loggedInUser =>
+          request(app)
+            .get(rootPath)
+            .set('user_id', loggedInUser.id)
+            .expect(response => expect(response.body.todos).toEqual([]))
         )
       ));
+
+    it('should return 1 item in the array', () =>
+      createUser()
+        .then(user => login(user))
+        .then(loggedInUser => {
+          ToDo.build({ subject: 'test' })
+            .setUser(loggedInUser)
+            .then(newTodo =>
+              newTodo.save().then(() =>
+                request(app)
+                  .get(rootPath)
+                  .set('user_id', loggedInUser.id)
+                  .expect(response => expect(response.body.todos.length).toEqual(1))
+              )
+            );
+        }));
   });
 
   describe('POST /', () => {
     it('should create one todo item', () =>
-      createUser().then(loggedInUser =>
-        request(app)
-          .post(rootPath)
-          .set('user-id', loggedInUser.id)
-          .send({
-            subject: 'test'
-          })
-          .expect(200)
-          .then(response => expect(response.body.subject).toEqual('test'))
+      createUser().then(user =>
+        login(user).then(loggedInUser =>
+          request(app)
+            .post(rootPath)
+            .set('user_id', loggedInUser.id)
+            .send({
+              subject: 'test'
+            })
+            .expect(200)
+            .then(response => expect(response.body.subject).toEqual('test'))
+        )
       ));
   });
 });

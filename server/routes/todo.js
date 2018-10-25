@@ -11,7 +11,7 @@ router
   .get((req, res) => {
     req.authenticatedUser.getToDos().then(todos => {
       res.json({
-        todos
+        todos: todos || []
       });
     });
   })
@@ -24,10 +24,11 @@ router
       done,
       dueDate
     });
-    newTodo.setUser(req.authenticatedUser);
-    newTodo.save().then(() => {
-      res.json(newTodo);
-    });
+    newTodo.setUser(req.authenticatedUser).then(() =>
+      newTodo.save().then(() => {
+        res.json(newTodo);
+      })
+    );
   });
 
 router

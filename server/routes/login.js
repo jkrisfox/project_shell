@@ -11,7 +11,7 @@ router.route('/').post((req, res) => {
           res.json({ user_id: user.id });
         });
       } else {
-        res.json({ error: 'your are not logged in' });
+        res.json({ error: 'you are not logged in' });
       }
     },
     error => {
