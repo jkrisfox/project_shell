@@ -1,8 +1,11 @@
 const request = require('supertest');
 const { User } = require('../../models');
 const app = require('../../app');
+const truncate = require('../truncate');
 
 describe('login', () => {
+  beforeAll(() => truncate());
+  afterAll(() => User.Sequelize.close());
   it('should give back a user_id for a correct login', done => {
     User.create({ username: `test${new Date().getTime()}`, password: 'test' }).then(user =>
       request(app)

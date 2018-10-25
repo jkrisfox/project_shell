@@ -1,6 +1,6 @@
 const authenticator = require('../../routes/authenticator');
-const truncate = require('../truncate');
 const { User, Session } = require('../../models');
+const truncate = require('../truncate');
 
 describe('authenticator', () => {
   const createUser = () =>
@@ -12,11 +12,10 @@ describe('authenticator', () => {
     const newSession = Session.build({
       expiration: new Date(new Date().getTime() + 30 * 60000)
     });
-    return user.setSession(newSession);
+    return user.setSession(newSession).then(() => user.save());
   };
-
-  afterAll(() => truncate().then(() => Session.sequelize.close()));
-
+  beforeAll(() => truncate());
+  afterAll(() => User.Sequelize.close());
   describe('login', () => {
     it('should create a session for the user', () =>
       createUser().then(user =>
@@ -73,13 +72,15 @@ describe('authenticator', () => {
     it('should return true of the user is currently logged in', () =>
       createUser().then(user =>
         createSession(user).then(() =>
-          authenticator.isAuthenticated(user).then(value => expect(value).toBeTruthy())
+          authenticator.isAuthenticated(user).then(value => {
+            expect(value).toStrictEqual(true);
+          })
         )
       ));
 
     it("should return false if the user isn't logged in", () =>
       createUser().then(user =>
-        authenticator.isAuthenticated(user).then(value => expect(value).toBeFalsy())
+        authenticator.isAuthenticated(user).then(value => expect(value).toStrictEqual(false))
       ));
   });
 });
